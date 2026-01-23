@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Rooms | TravelStay</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .room-card {
+            transition: transform 0.3s;
+            margin-bottom: 20px;
+        }
+        .room-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .amenity-icon {
+            color: #4CAF50;
+            margin-right: 5px;
+        }
+        .price-tag {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .filter-sidebar {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-hotel"></i> TravelStay
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Filters Sidebar -->
+            <div class="col-md-3">
+                <div class="filter-sidebar">
+                    <h4>Search Filters</h4>
+                    <form method="get">
+                        <div class="mb-3">
+                            <label class="form-label">Check-in Date</label>
+                            <input type="date" name="check_in" class="form-control" 
+                                   value="{{ filter_data.check_in|default:'' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Check-out Date</label>
+                            <input type="date" name="check_out" class="form-control"
+                                   value="{{ filter_data.check_out|default:'' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Room Type</label>
+                            <select name="room_type" class="form-select">
+                                <option value="">All Types</option>
+                                {% for type in room_types %}
+                                    <option value="{{ type.id }}" 
+                                            {% if filter_data.room_type == type.id|stringformat:"i" %}selected{% endif %}>
+                                        {{ type.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Price Range</label>
+                            <div class="row">
+                                <div class="col">
+                                    <input type="number" name="min_price" class="form-control" 
+                                           placeholder="Min" value="{{ filter_data.min_price|default:'' }}">
+                                </div>
+                                <div class="col">
+                                    <input type="number" name="max_price" class="form-control"
+                                           placeholder="Max" value="{{ filter_data.max_price|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Guests</label>
+                            <input type="number" name="guests" class="form-control" min="1"
+                                   value="{{ filter_data.guests|default:'' }}">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> Search Rooms
+                        </button>
+                        <a href="{% url 'available_rooms' %}" class="btn btn-outline-secondary w-100 mt-2">
+                            Clear Filters
+                        </a>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Rooms List -->
+            <div class="col-md-9">
+                <h1>Available Rooms</h1>
+                <p class="text-muted">Found {{ rooms.count }} rooms</p>
+                
+                {% if rooms %}
+                    <div class="row">
+                        {% for room in rooms %}
+                            <div class="col-md-6">
+                                <div class="card room-card">
+                                    {% if room.featured_image %}
+                                        <img src="{{ room.featured_image.url }}" class="card-img-top" 
+                                             alt="{{ room.name }}" style="height: 200px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="card-img-top bg-secondary" 
+                                             style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-image fa-3x text-white"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <h5 class="card-title">{{ room.name }}</h5>
+                                            <span class="price-tag">${{ room.price_per_night }}/night</span>
+                                        </div>
+                                        <p class="text-muted">
+                                            <i class="fas fa-{{ room.room_type.icon_class|default:'bed' }}"></i>
+                                            {{ room.room_type.name }}
+                                        </p>
+                                        <p class="card-text">{{ room.description|truncatechars:100 }}</p>
+                                        
+                                        <div class="mb-3">
+                                            <small>
+                                                <i class="fas fa-user-friends"></i> Up to {{ room.capacity }} guests
+                                            </small>
+                                            <span class="mx-2">•</span>
+                                            <small>
+                                                <i class="fas fa-star text-warning"></i> {{ room.rating|default:"New" }}
+                                            </small>
+                                        </div>
+                                        
+                                        <div class="amenities mb-3">
+                                            {% if room.has_wifi %}
+                                                <span class="badge bg-light text-dark me-1">
+                                                    <i class="fas fa-wifi amenity-icon"></i> WiFi
+                                                </span>
+                                            {% endif %}
+                                            {% if room.has_ac %}
+                                                <span class="badge bg-light text-dark me-1">
+                                                    <i class="fas fa-snowflake amenity-icon"></i> AC
+                                                </span>
+                                            {% endif %}
+                                            {% if room.has_tv %}
+                                                <span class="badge bg-light text-dark me-1">
+                                                    <i class="fas fa-tv amenity-icon"></i> TV
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <a href="{% url 'make_reservation' room.id %}" 
+                                           class="btn btn-primary w-100">
+                                            <i class="fas fa-calendar-check"></i> Book Now
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        No rooms available matching your criteria. Try adjusting your filters.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
